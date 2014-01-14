@@ -12,21 +12,27 @@ Features
 Transport (for both consumer and producer)
 ------------------------------------------
 
-1. Zookeeper support :
-
+**Zookeeper support**
+```
 	var transport = new Kafka.Transport({
 		zkClient: new Kafka.Zookeeper()
-		compression: 'snappy'
 	})
-
-2. Brokers only support :
-
+```
+**Brokers only support**
+```
 	var transport = new Kafka.Transport({
 		brokers: [ 'broker01', 'broker02:9898' ]
 	})
-
+```
 A random broker will be requested for metadata
 
+**Compression 'snappy' or 'gzip'**
+```
+	var transport = new Kafka.Transport({
+		zkClient: new Kafka.Zookeeper()
+		compression: 'snappy'				/* or 'gzip' */
+	})
+```
 Consumer
 --------
 
@@ -38,7 +44,7 @@ To consume a topic, you need :
 * a callback which get executed for each message
 * an optional end callback
 
-Example :
+**Example :**
 
 	var consumer = new Kafka.Consumer({
 		transport: transport,
@@ -93,38 +99,38 @@ OffsetStore
 
 An offset store is a class implementing at least these 4 functions :
 
-1. 'init' (emiting a 'ready' event when ready)
-
+**init** (emiting a 'ready' event when ready)
+```
 	customStore.prototype.init = function() {
-		// ...
+		/* ... */
 		this.emit('ready');
 	}
-
-2. 'fetch' :
-
+```
+**fetch**
+```
 	customStore.prototype.fetch = function(topic, group, partition, callback) {
-		// ...
+		/* ... */
 		callback(offset)
 	}
-
-3. 'commit' :
-
+```
+**commit**
+```
 	customStore.prototype.commit = function(offset, topic, group, partition, callback) {
-		// ...
+		/* ... */
 	}
-
-4. 'cleanup':
-
+```
+**cleanup**
+```
 	customStore.prototype.celanup = function() {
-		// not yet used
+		/* not yet used */
 	}
-
+```
 Serializer
 ----------
 
 A serializer is a class implementing at least the 'serialize' and 'deserialize' functions.
 See JsonSerializer for example :
-
+```
 	kafkaJsonSerializer.prototype.deserialize = function(data) {
 	  return JSON.parse(data);
 	}
@@ -132,8 +138,4 @@ See JsonSerializer for example :
 	kafkaJsonSerializer.prototype.serialize = function(json) {
 	  return JSON.stringify(json);
 	}
-
-Compression
------------
-	
-Snappy & Gzip compression support !
+```

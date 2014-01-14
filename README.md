@@ -50,12 +50,12 @@ Consumer
 --------
 
 To consume a topic, you need : 
-* a transport layer
-* an offsetStore
-* a topic / partition
-* a serializer
-* a callback which get executed for each message
-* an optional end callback
+- a transport layer
+- an offsetStore
+- a topic / partition
+- a serializer
+- a callback which get executed for each message
+- an optional end callback
 
 **Example :**
 

@@ -103,7 +103,7 @@ Producer
 		 	topic: topic,
 	 		partition: partition,
 	 		serializer: serializer,
-	  		messages: [ { mykey: "Hello World!" } ] // 'messages' should only contains json objects !
+	  		messages: [ { mykey: "Hello World!" } ] /* json serializer */
 		});
 	}
 

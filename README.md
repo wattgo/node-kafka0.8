@@ -9,6 +9,19 @@ Features
 * Custom offset store (memory, redis, zookeeper soon, ... buildYourOwn)
 * Custom serializer (string, json, avro soon, ... buildYourOwn)
 
+Install & Usage
+---------------
+
+By npm :
+```
+npm install kafka0.8
+```
+
+```
+var Kafka = require('kafka0.8');
+```
+
+
 Transport (for both consumer and producer)
 ------------------------------------------
 

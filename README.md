@@ -42,7 +42,7 @@ A random broker will be requested for metadata
 **Compression 'snappy' or 'gzip'**
 ```
 	var transport = new Kafka.Transport({
-		zkClient: new Kafka.Zookeeper()
+		zkClient: new Kafka.Zookeeper(),
 		compression: 'snappy'				/* or 'gzip' */
 	})
 ```
@@ -130,6 +130,7 @@ An offset store is a class implementing at least these 4 functions :
 ```
 	customStore.prototype.commit = function(offset, topic, group, partition, callback) {
 		/* ... */
+    callback(err);
 	}
 ```
 **cleanup**

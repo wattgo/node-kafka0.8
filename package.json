@@ -1,7 +1,7 @@
 {
   "name": "kafka0.8",
   "main": "./lib/kafka.js",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "author": "Wattgo <maxime.lemaire@wattgo.com",
   "description": "Kafka 0.8 client for Node.js",
   "keywords": [

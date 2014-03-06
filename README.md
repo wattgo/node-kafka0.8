@@ -1,16 +1,35 @@
 Kafka 0.8 node client
 =====================
 
+Changes
+-------
+* New consumer api
+* Consume multiple topics/partitions
+* Consume topic by regex or function
+* Zookeeper offset store now impemented
+* Store re-design (should allow partitions subscription) /!\ format of offset key in redis changed /!\
+
+
+TODO
+----
+* better producer API
+* encode/decode message should be async
+* auto partitions subscription for consumers group
+* white_list / black_list of partitions
+* add some partitioners (random, fnv, ...) ?
+
+
 Features
 --------
 * Optional Zookeeper
 * Gzip and Snappy compression
 * Auto-commit offset
-* Custom offset store (memory, redis, zookeeper soon, ... buildYourOwn)
+* Custom offset store (memory, redis, zookeeper, ... buildYourOwn)
 * Custom serializer (string, json, avro soon, ... buildYourOwn)
 
+
 Install
----------------
+-------
 
 **First**
 ```
@@ -27,71 +46,158 @@ Transport (for both consumer and producer)
 
 **Zookeeper support**
 ```
-	var transport = new Kafka.Transport({
-		zkClient: new Kafka.Zookeeper()
+    var kTransport = new Kafka.Transport({
+    	zkClient: new Kafka.Zookeeper()
+		/* ... */
 	})
 ```
 **Brokers only support**
 ```
-	var transport = new Kafka.Transport({
+	var kTransport = new Kafka.Transport({
 		brokers: [ 'broker01', 'broker02:9898' ]
+		/* ... */
 	})
 ```
 A random broker will be requested for metadata
 
 **Compression 'snappy' or 'gzip'**
 ```
-	var transport = new Kafka.Transport({
+	var kTransport = new Kafka.Transport({
 		zkClient: new Kafka.Zookeeper(),
-		compression: 'snappy'				/* or 'gzip' */
+		compression: 'snappy'								/* or 'gzip' */
+		/* ... */
 	})
 ```
+
+**Default options**
+```
+	{
+		clientId: 'default-node-client',					/* default client id */
+		group: 'wattgo-node',								/* default group */
+		timeout: 5000,										/* request timeout (this is not the kafka one) */
+		reconnectMs: 1000,									/* if we lost connection to a broker, try to reconnect every 1000ms */
+		dnsLookup: true										/* perform a dns lookup on brokers hostname */
+	}
+```
+
+
 Consumer
 --------
 
-To consume a topic, you need : 
-- a transport layer
-- an offsetStore
-- a topic / partition
-- a serializer
-- a callback which get executed for each message
-- an optional end callback
+**Default options**
+```
+	{
+		clientId: 'my-consumer',							/* consumer id */
+		group: 'my-group',									/* consumer group */
 
-**Example :**
+		maxBytes: 1024 * 1024,								/* max bytes to fetch per request */
+		minBytes: 0,										/* min bytes to fetch per request */
 
-	var consumer = new Kafka.Consumer({
-		transport: transport,
-		offsetStore: new Kafka.OffsetStore.Redis(/* default node redis options*/)
+		metadataTTL: 5000,									/* refresh metadata every 5000ms  */
+
+		store: new Kafka.Store.Memory(),					/* offset and partition subscription store. see 'Store' section */
+
+		payloads: [{										/* see 'Payloads' section for more advanced usages */
+			topic: 'test',
+			partition: 1,
+			serializer: new Kafka.Serializer.Json()			/* we will parse json, see 'Serializer' section */
+		}],
+
+		/* optionally you can pass a transport layer */
+		transport: kTransport,
+
+		/* if you dont it will be created for you, pass your options here */
+		timeout: 10000
+		/* ... */
 	}
-	, onReady)
+```
 
-	var topic = 'mytopic';
-	var partition = 0;
-	var serializer = new Kafka.Serializer.String();
+**Usage**
 
-	function onReady() {
-		consumer.consume(topic, partition, serializer, function(message, offset, next) {
-			console.log('consume:', message, offset);
-			/*
-			 *	next() will commit offset to the offsetStore
-			 *	and fetch next message
-			 */
+```
+var consumer = new Kafka.Consumer(options, function() {
+	console.log('ready');
+	consumer.consume(eachCallback, doneCallback, endCallback);
+})
+```
+
+**eachCallback(msg, meta, next)** :<br/>
+Executed for each message consumed<br/>
+- msg: deserialized message<br/>
+- meta: { topic, offset, partition }<br/>
+- next: commit offset and get next message in message set, YOU HAVE TO CALL IT<br/>
+
+**doneCallback()** :<br/> 
+- executed at the end of message set<br/>
+
+**endCallback(err)** :<br/>
+- executed when everything has been consumed or if fetch request timed out<br/>
+
+**Example**
+```
+var consumer = new Kafka.Consumer(options, do_consume);
+function do_consume() {
+	consumer.consume(
+		function(msg, meta, next) {
+			console.log('Message :', msg);
+			console.log('Topic:', meta.topic, '- Partition:', meta.partition, '- Offset:', meta.offset);
+			/* commit offset to offset store and get next message */
 			next();
+		},
+		function() {
+			console.log('end of this message set');
+		},
+		function(err) {
+			console.log('done');
+			// i can safely loop
+			setTimeout(do_consume, 1000);
 		}
-		, function() {
-			// done with this message set, consume again in 5 sec !
-			setTimeout(function() {
-				onReady();
+	)
+}
+```
+
+**Advanced payloads**
+
+Each payload can define a topic, an array of topics, a regex to match topics name or a function to evaluate topic name at runtime.
+You can do the same with 'partition' (except regex)
+Optionally, if you have multiple payloads, you can provide some specific callbacks for some of them using 'each' and 'done' property.
+
+Example :
+```
+payloads: [
+	{
+		topic: [
+			'test',													// string
+			/[0-9]+/,												// regex
+			function(topicName, topicMetadata) {					// function returning true or false
+				return topicName.length > 10
 			}
-			, 5000);
-		})
+		],
+		partition: [
+			3,														// partition id
+			function(partitionId, topicName, topicMetadata) {		// function returning true or false
+				return !(partitionId % 2)
+			},
+			{ id: 11, offset: 100 }									// partition id and start offset
+		]
+		each: function(msg, meta, next) {
+			// executed for each message concerning this payload
+		},
+		done: function() {
+			// end of message set
+		}
 	}
+]
+```
+
 
 Producer
 --------
-
+```
 	var producer = new Kafka.Producer({
-	  transport: transport
+	  transport: kTransport,
+	  requiredAcks: 1,
+	  produceTimeout: 1000 * 30
 	}, onReady);
 
 	var topic = 'jsontopic';
@@ -106,6 +212,7 @@ Producer
 	  		messages: [ { mykey: "Hello World!" } ] /* json serializer */
 		});
 	}
+```
 
 OffsetStore
 -----------
@@ -119,18 +226,18 @@ An offset store is a class implementing at least these 4 functions :
 		this.emit('ready');
 	}
 ```
-**fetch**
+**fetchOffset**
 ```
-	customStore.prototype.fetch = function(topic, group, partition, callback) {
+	customStore.prototype.fetchOffset = function(groupId, topic, partitionId, callback) {
 		/* ... */
 		callback(offset)
 	}
 ```
-**commit**
+**commitOffset**
 ```
-	customStore.prototype.commit = function(offset, topic, group, partition, callback) {
+	customStore.prototype.commitOffset = function(groupId, topic, partitionId, offset, callback) {
 		/* ... */
-    callback(err);
+    	callback(err);
 	}
 ```
 **cleanup**

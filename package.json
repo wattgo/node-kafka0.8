@@ -1,16 +1,20 @@
 {
   "name": "kafka0.8",
   "main": "./lib/kafka.js",
-  "version": "0.1.1",
-  "author": "Wattgo <maxime.lemaire@wattgo.com",
+  "version": "0.1.3",
+  "author": "Wattgo <maxime.lemaire@wattgo.com>",
   "description": "Kafka 0.8 client for Node.js",
+  "repository" : {
+    "type": "git",
+    "url" : "https://github.com/wattgo/node-kafka0.8"
+  },
   "keywords": [
     "kafka"
   ],
   "engines": {
     "node": ">=0.6.0"
   },
-  "dependencies" : {
+  "dependencies": {
     "node-zookeeper-client": "0.2.0",
     "async": "0.2.9",
     "buffermaker": "1.0.0",

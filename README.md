@@ -200,17 +200,22 @@ Producer
 	  produceTimeout: 1000 * 30
 	}, onReady);
 
-	var topic = 'jsontopic';
-	var partition = 0;
-	var serializer = new Kafka.Serializer.Json();
+	var jsonSerializer = new Kafka.Serializer.Json();
 
 	function onReady() {
-		producer.produce({
-		 	topic: topic,
-	 		partition: partition,
-	 		serializer: serializer,
-	  		messages: [ { mykey: "Hello World!" } ] /* json serializer */
-		});
+
+    var payloads = [
+      {
+        topic: 'jsontopic',
+        partition: 0,
+        serializer: jsonSerializer,
+        messages: [ { mykey: "Hello World" } ]
+      }
+    ]
+
+		producer.produce(payloads, function() {
+        // done
+    })
 	}
 ```
 

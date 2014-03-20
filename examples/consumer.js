@@ -16,12 +16,13 @@ var topic = process.argv[2];
 var consumer = new Kafka.Consumer({
 	transport: transport,
 	store: new Kafka.Store.Zookeeper({ zkClient: zkClient }),
+	//store: new Kafka.Store.Memory(),
 	payloads: [
 		{
-			topic: [ 'test', 'hello' ],
+			topic: [ 'test' ],
 			group: 'test-group',
-			serializer: stringSerializer,
-			partition: [ function(partitionId, topic, meta) { return partitionId < 8 } ]
+			serializer: jsonSerializer,
+			partition: [ 0 ]
 		}
 	]
 }
